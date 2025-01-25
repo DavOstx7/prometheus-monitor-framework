@@ -1,0 +1,46 @@
+app:
+  prometheus_port: 9090
+  execution_mode: "sync"
+  export_interval_seconds: 600
+
+logging:
+  version: 1
+  disable_existing_loggers: false
+
+  formatters:
+    simple:
+      format: "[%(asctime)s] %(name)s : %(levelname)s : %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: DEBUG
+      formatter: simple
+      stream: ext://sys.stdout
+
+  loggers:
+    src:
+      level: INFO
+      handlers: [ console ]
+      propagate: true
+
+    exporters:
+      level: INFO
+      handlers: [ console ]
+      propagate: true
+
+exporters:
+  - type: "s3_size"
+    name: "sandbox_logs"
+    enabled: true
+    config:
+      bucket_name: "sandbox-bucket"
+      key_prefix: "logs/"
+
+  - type: "s3_size"
+    name: "prod_packages"
+    enabled: true
+    config:
+      bucket_name: "prod-bucket"
+      key_prefix: "packages/"
