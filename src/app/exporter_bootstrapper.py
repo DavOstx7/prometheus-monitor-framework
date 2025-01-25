@@ -2,7 +2,7 @@ import functools
 import logging
 import importlib
 import re
-from typing import List, Type
+from typing import Optional, List, Type
 from types import ModuleType
 from src.exporters import BaseExporter
 from src.core.config import ExporterSettings, ExporterConfigT
@@ -30,25 +30,23 @@ def _convert_path_to_module_path(path: str) -> str:
     Returns:
         str: The corresponding Python module path.
     """
-    module_path = re.sub(r"[\\/]+", ".", path)
-    module_path = module_path.lstrip(".").rstrip(".")
+    module_path = re.sub(r"[\\/]+", ".", path).lstrip(".").rstrip(".")
     while ".." in module_path:
         module_path = module_path.replace("..", ".")
     return module_path
 
 
-def get_exporter_logger(exporter_type: str, exporter_name: str) -> logging.Logger:
+def get_exporter_logger(exporter_type: str, exporter_name: Optional[str]) -> logging.Logger:
     """
     Retrieves the logger for the specified exporter.
 
     Args:
         exporter_type (str): The type of the exporter.
-        exporter_name (str): The name of the exporter.
+        exporter_name (Optional[str]): The name of the exporter.
 
     Returns:
         logging.Logger: The logger for the exporter.
     """
-    log.debug(f"Getting logger of exporter: '{exporter_type}.{exporter_name}'")
     return get_logger(EXPORTERS_PARENT_LOGGER_NAME, exporter_type, exporter_name)
 
 
@@ -61,7 +59,7 @@ class ExporterBootstrapper:
 
     def __init__(self, exporters_dir_path: str):
         """
-        Initializes the ExporterBootstrapper with the path to the exporters directory.
+        Initializes the ExporterBootstrapper with the path to the exporters' directory.
 
         Args:
             exporters_dir_path (str): The path to the directory containing exporter modules.
@@ -71,21 +69,33 @@ class ExporterBootstrapper:
 
     def bootstrap_exporters(self, exporters_settings: List[ExporterSettings]) -> List[BaseExporter]:
         """
-        Bootstraps a list of exporters based on the provided settings.
+        Bootstraps a list of exporters based on their settings.
+
+        This method iterates over the provided exporter settings, initializes
+        the exporters that are enabled, and skips those that are disabled.
+        Successfully bootstrapped exporters are returned in a list.
 
         Args:
-            exporters_settings (List[ExporterSettings]): A list of exporter configuration settings.
+            exporters_settings (List[ExporterSettings]): A list of settings for each exporter.
 
         Returns:
-            List[BaseExporter]: A list of initialized exporter instances.
+            List[BaseExporter]: A list of successfully bootstrapped exporter instances.
         """
         exporters = []
 
-        log.info(f"Bootstrapping {len(exporters_settings)} exporters...")
+        log.info(f"Processing {len(exporters_settings)} exporters settings...")
         for exporter_setting in exporters_settings:
-            exporter = self.bootstrap_exporter(exporter_setting)
-            exporters.append(exporter)
-        log.info(f"Bootstrapped all exporters successfully")
+            if exporter_setting.enabled:
+                log.debug(f"Exporter '{exporter_setting.qualified_name}' is enabled. Bootstrapping...")
+                exporter = self.bootstrap_exporter(exporter_setting)
+                exporters.append(exporter)
+            else:
+                log.debug(f"Exporter '{exporter_setting.qualified_name}' is disabled. Skipping bootstrap...")
+
+        if not exporters:
+            log.warning(f"No exporters were bootstrapped (no exporters configured or all are disabled)")
+        else:
+            log.info(f"Successfully bootstrapped {len(exporters)} enabled exporters")
 
         return exporters
 
@@ -99,18 +109,24 @@ class ExporterBootstrapper:
         Returns:
             BaseExporter: The initialized exporter instance.
         """
+        log.debug(f"Retrieving logger for exporter: '{exporter_settings.qualified_name}'")
         logger = get_exporter_logger(exporter_settings.type, exporter_settings.name)
 
         if exporter_settings.config:
+            log.debug(f"Loading config class for exporter type: '{exporter_settings.type}'")
             exporter_config_class = self.load_exporter_config_class(exporter_settings.type)
-            log.debug(f"Initializing config class of exporter: '{exporter_settings.type}.{exporter_settings.name}'")
+
+            log.debug(f"Initializing config model for exporter: '{exporter_settings.qualified_name}'")
             exporter_config = exporter_config_class(**exporter_settings.config)
             exporter_settings = exporter_settings.model_copy(update={"config": exporter_config}, deep=False)
 
+        log.debug(f"Loading class for exporter type: '{exporter_settings.type}'")
         exporter_class = self.load_exporter_class(exporter_settings.type)
-        log.debug(f"Initializing class of exporter: '{exporter_settings.type}.{exporter_settings.name}'")
+
+        log.debug(f"Initializing exporter instance: '{exporter_settings.qualified_name}'")
         exporter = exporter_class(exporter_settings, logger)
-        log.info(f"Bootstrapped exporter: '{exporter}'")
+        log.debug(f"Successfully bootstrapped exporter: '{exporter}'")
+
         return exporter
 
     def load_exporter_class(self, exporter_type: str) -> Type[BaseExporter]:
@@ -126,7 +142,6 @@ class ExporterBootstrapper:
         Raises:
             ExporterBootstrapError: If the exporter module does not contain the expected exporter class.
         """
-        log.debug(f"Loading class of exporter: '{exporter_type}'")
         exporter_module = self.load_exporter_module(exporter_type)
         try:
             return getattr(exporter_module, EXPORTER_CLASS_NAME)
@@ -148,7 +163,6 @@ class ExporterBootstrapper:
         Raises:
             ExporterBootstrapError: If the exporter config module does not contain the expected config class.
         """
-        log.debug(f"Loading config class of exporter: '{exporter_type}'")
         exporter_config_module = self.load_exporter_config_module(exporter_type)
         try:
             return getattr(exporter_config_module, EXPORTER_CONFIG_CLASS_NAME)
