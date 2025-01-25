@@ -9,12 +9,28 @@ from src.core.exceptions import InvalidFileFormatError, ConfigFileNotFoundError
 
 
 class ExecutionMode(str, Enum):
+    """
+    Enum representing different execution modes for the application.
+
+    Attributes:
+        SYNC: Synchronous execution mode.
+        ASYNC: Asynchronous execution mode.
+        MULTITHREADED: Multithreaded execution mode.
+    """
     SYNC = "sync"
     ASYNC = "async"
     MULTITHREADED = "multithreaded"
 
 
 class AppConfig(BaseModel):
+    """
+    Represents the application configuration.
+
+    Attributes:
+        prometheus_port (int): Port number for Prometheus metrics.
+        execution_mode (ExecutionMode): Mode of execution (sync, async, or multithreaded).
+        export_interval_seconds (int): Interval (in seconds) for data export.
+    """
     model_config = ConfigDict(use_enum_values=True)
 
     prometheus_port: int
@@ -26,6 +42,15 @@ ExporterConfigT = TypeVar("ExporterConfigT")
 
 
 class ExporterSettings(BaseModel):
+    """
+    Represents the configuration for a data exporter.
+
+    Attributes:
+        type (str): The type of exporter.
+        name (Optional[str]): The optional name of the exporter.
+        enabled (bool): A flag indicating whether the exporter is enabled.
+        config (Optional[Union[dict, ExporterConfigT]]): Optional configuration specific to the exporter type.
+    """
     model_config = ConfigDict(frozen=True)
 
     type: str
@@ -42,6 +67,19 @@ _FILE_SUFFIX_TO_LOADER = {
 
 
 def _load_config_from_file(file_path: str) -> dict:
+    """
+    Loads configuration data from a file, based on its extension.
+
+    Args:
+        file_path (str): The path to the configuration file.
+
+    Raises:
+        InvalidFileFormatError: If the file format is unsupported.
+        ConfigFileNotFoundError: If the file does not exist.
+
+    Returns:
+        dict: The parsed configuration data.
+    """
     suffix = PurePath(file_path).suffix
     loader = _FILE_SUFFIX_TO_LOADER.get(suffix)
     if not loader:
@@ -55,11 +93,28 @@ def _load_config_from_file(file_path: str) -> dict:
 
 
 class Config(BaseModel):
+    """
+    Represents the full application configuration, including app settings, exporters, and logging settings.
+
+    Attributes:
+        app (AppConfig): The application-specific configuration.
+        exporters (List[ExporterSettings]): A list of exporters and their settings.
+        logging (dict): The logging configuration.
+    """
     app: AppConfig
     exporters: List[ExporterSettings]
     logging: dict
 
     @classmethod
     def from_file(cls, file_path: str):
+        """
+        Creates a Config instance by loading and parsing a configuration file.
+
+        Args:
+            file_path (str): The path to the configuration file.
+
+        Returns:
+            Config: A Config instance populated with the data from the file.
+        """
         config = _load_config_from_file(file_path)
         return cls(**config)
