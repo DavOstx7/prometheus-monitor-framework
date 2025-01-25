@@ -1,20 +1,20 @@
 import logging
-
 import logging.config
 
 
-def get_logger(*name_parts) -> logging.Logger:
+def get_logger(*name_parts: str) -> logging.Logger:
     """
     Retrieves a logging logger with the specified name.
 
     The logger name is constructed by joining the provided name parts with periods ('.').
 
     Args:
-        *name_parts: Parts of the logger name, which will be concatenated.
+        *name_parts (str): Parts of the logger name, which will be concatenated.
 
     Returns:
         logging.Logger: A logger instance with the specified name.
     """
+    name_parts = [name_part for name_part in name_parts if name_part]
     logger_name = ".".join(name_parts)
     return logging.getLogger(logger_name)
 
