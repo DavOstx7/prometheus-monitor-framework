@@ -60,7 +60,7 @@ class BaseExporter(ABC, Generic[ExporterConfigT]):
         Returns:
             str: A string representation of the exporter in the format 'type.name'.
         """
-        return f"{self._settings.type}.{self._settings.name}"
+        return self._settings.qualified_name
 
     def __repr__(self):
         """

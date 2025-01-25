@@ -58,6 +58,19 @@ class ExporterSettings(BaseModel):
     enabled: bool = True
     config: Optional[Union[dict, ExporterConfigT]] = None
 
+    @property
+    def qualified_name(self) -> str:
+        """
+        Returns the qualified name of the exporter.
+
+        The qualified name is a concatenation of the exporter type and its name. If no name is provided,
+        only the type is returned.
+
+        Returns:
+            str: The qualified name of the exporter.
+        """
+        return f"{self.type}.{self.name}" if self.name else self.type
+
 
 _FILE_SUFFIX_TO_LOADER = {
     ".yml": yaml.safe_load,
