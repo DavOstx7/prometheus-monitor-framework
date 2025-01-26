@@ -1,5 +1,7 @@
+import logging
+
 from src.core import CLIArgs, Config
-from src.core.logs import update_loggers_level, configure_logging
+from src.core.logs import update_loggers_level, setup_logging
 from src.app import ExporterBootstrapper, PrometheusMetricsExporter
 
 
@@ -15,13 +17,12 @@ def main():
     5. Starts the Prometheus metrics exporter to run indefinitely.
     """
     cli_args = CLIArgs.from_parsing()
-
     config = Config.from_file(cli_args.config_file)
 
     if cli_args.verbose:
-        update_loggers_level(config.logging, "DEBUG")
+        update_loggers_level(config.logging, logging.DEBUG)
 
-    configure_logging(config.logging)
+    setup_logging(config.logging)
 
     exporter_bootstrapper = ExporterBootstrapper(cli_args.exporters_dir)
     exporters = exporter_bootstrapper.bootstrap_exporters(config.exporters)

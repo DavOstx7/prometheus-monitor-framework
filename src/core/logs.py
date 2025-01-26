@@ -1,5 +1,6 @@
 import logging
 import logging.config
+from typing import Union
 
 
 def get_logger(*name_parts: str) -> logging.Logger:
@@ -19,7 +20,7 @@ def get_logger(*name_parts: str) -> logging.Logger:
     return logging.getLogger(logger_name)
 
 
-def update_loggers_level(config: dict, level: str):
+def update_loggers_level(logging_config: dict, level: Union[int, str]):
     """
     Updates the logging level for all loggers in the provided configuration.
 
@@ -27,20 +28,20 @@ def update_loggers_level(config: dict, level: str):
     to the specified logging level.
 
     Args:
-        config (dict): The logging configuration dictionary containing logger settings.
-        level (str): The logging level to set for all loggers (e.g., 'DEBUG', 'INFO').
+        logging_config (dict): The logging configuration dictionary containing logger settings.
+        level (Union[int, str]): The logging level to set for all loggers (e.g., 'DEBUG', 'INFO').
     """
-    for _, logger in config["loggers"].items():
+    for _, logger in logging_config.get("loggers", {}).items():
         logger["level"] = level
 
 
-def configure_logging(config: dict):
+def setup_logging(logging_config: dict):
     """
-    Configures the logging system using the provided configuration dictionary.
+    Set up the logging system using the provided configuration dictionary.
 
     This function applies the logging configuration using `logging.config.dictConfig`.
 
     Args:
-        config (dict): The logging configuration dictionary to use for setting up logging.
+        logging_config (dict): The logging configuration dictionary to use for setting up logging.
     """
-    logging.config.dictConfig(config)
+    logging.config.dictConfig(logging_config)
