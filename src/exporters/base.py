@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Generic
+from typing import Generic, Optional
 
 from src.core.config import ExporterSettings, ExporterConfigT
 
@@ -34,12 +34,12 @@ class BaseExporter(ABC, Generic[ExporterConfigT]):
         raise NotImplementedError
 
     @property
-    def config(self) -> ExporterConfigT:
+    def config(self) -> Optional[ExporterConfigT]:
         """
         Returns the configuration associated with the exporter.
 
         Returns:
-            ExporterConfigT: The configuration settings for the exporter.
+            Optional[ExporterConfigT]: The configuration settings for the exporter.
         """
         return self._settings.config
 
