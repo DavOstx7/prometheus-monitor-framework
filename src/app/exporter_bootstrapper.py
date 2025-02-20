@@ -84,13 +84,13 @@ class ExporterBootstrapper:
         exporters = []
 
         log.info(f"Processing {len(exporters_settings)} exporters settings...")
-        for exporter_setting in exporters_settings:
-            if exporter_setting.enabled:
-                log.debug(f"Exporter '{exporter_setting.qualified_name}' is enabled. Bootstrapping...")
-                exporter = self.bootstrap_exporter(exporter_setting)
+        for exporter_settings in exporters_settings:
+            if exporter_settings.enabled:
+                log.debug(f"Exporter '{exporter_settings.qualified_name}' is enabled. Bootstrapping...")
+                exporter = self.bootstrap_exporter(exporter_settings)
                 exporters.append(exporter)
             else:
-                log.debug(f"Exporter '{exporter_setting.qualified_name}' is disabled. Skipping bootstrap...")
+                log.debug(f"Exporter '{exporter_settings.qualified_name}' is disabled. Skipping bootstrap...")
 
         if not exporters:
             log.warning(f"No exporters were bootstrapped (no exporters configured or all are disabled)")
